@@ -1,31 +1,43 @@
-import struct
-import ctypes
+import os
+import sys
+import glob
+import time
+import random
+from PIL import Image
+import win32api, win32con, win32gui
 from datetime import *
 
 HOUR = datetime.now().hour
 
-SPI_SETDESKWALLPAPER = 20
+os.chdir("C:\\wallpaper-python\\wallpapers\\")
 
-def is_64_windows():
-    return struct.calcsize('P') * 8 == 64
+def mergeIMG():
+	img1 = "C:\\wallpaper-python\\wallpapers\\0\\" + str(HOUR) + ".png"
+	img2 = "C:\\wallpaper-python\\wallpapers\\1\\" + str(HOUR) + ".png"
+	img3 = "C:\\wallpaper-python\\wallpapers\\2\\" + str(HOUR) + ".png"
+	images = [Image.open(x) for x in [img1, img2, img3]]
+	widths, heights = zip(*(i.size for i in images))
 
-def get_sys_parameters_info():
-    return ctypes.windll.user32.SystemParametersInfoW if is_64_windows() \
-        else ctypes.windll.user32.SystemParametersInfoA
+	total_width = 4920
+	max_height = 1920
 
+	new_im = Image.new('RGB', (total_width, max_height))
 
-def set_wallpaper(path):
-    sys_parameters_info = get_sys_parameters_info()
-    r = sys_parameters_info(SPI_SETDESKWALLPAPER, 0, path, 3)
+	new_im.paste(images[0], (0, 550))
+	new_im.paste(images[1], (1920, 550))
+	new_im.paste(images[2], (3840, 0))
 
-    if not r:
-        print(ctypes.WinError())
+	new_im.save('final.jpg', quality=100, subsampling=0)
+	setWallpaper("C:\\wallpaper-python\\wallpapers\\final.jpg")
 
-def change_wallpaper(wallpaper_number):
-    print("here", wallpaper_number)
-    WALLPAPER_PATH = "C:\\" + str(wallpaper_number) + ".jpg"
+# Function to actually set the wallpaper as tiled image
+# > We will set background as a single image (which is 2 images merged)
+def setWallpaper(path):
+    key = win32api.RegOpenKeyEx(win32con.HKEY_CURRENT_USER,"Control Panel\\Desktop",0,win32con.KEY_SET_VALUE)
+    win32api.RegSetValueEx(key, "WallpaperStyle", 0, win32con.REG_SZ, "0")
+    win32api.RegSetValueEx(key, "TileWallpaper", 0, win32con.REG_SZ, "1")
+    win32gui.SystemParametersInfo(win32con.SPI_SETDESKWALLPAPER, path, 1+2)
 
-    set_wallpaper(WALLPAPER_PATH)
+# ================================================================ #
 
-change_wallpaper(HOUR)
-
+mergeIMG()
