@@ -6,26 +6,47 @@ import random
 from PIL import Image
 import win32api, win32con, win32gui
 from datetime import *
+from screeninfo import get_monitors, Monitor
 
 HOUR = datetime.now().hour
 
 os.chdir("C:\\wallpaper-python\\wallpapers\\")
 
 def mergeIMG():
-	img1 = "C:\\wallpaper-python\\wallpapers\\0\\" + str(HOUR) + ".png"
-	img2 = "C:\\wallpaper-python\\wallpapers\\1\\" + str(HOUR) + ".png"
-	img3 = "C:\\wallpaper-python\\wallpapers\\2\\" + str(HOUR) + ".png"
-	images = [Image.open(x) for x in [img1, img2, img3]]
+	
+	total_width = 0
+	max_height = 0
+	monitors= get_monitors()
+	imagesArray = []
+
+	for m in monitors:
+		total_width += m.width
+		if m.height != max_height - m.y or m.height > max_height + m.y:
+			y = abs(m.y)
+			max_height = m.height + y
+
+	for i in range(len(monitors)):
+		img = "C:\\wallpaper-python\\wallpapers\\" + str(i) + "\\" + str(HOUR) + ".png"
+		imagesArray.append(img)
+		i += 1
+
+	images = [Image.open(x) for x in imagesArray]
 	widths, heights = zip(*(i.size for i in images))
 
-	total_width = 4920
-	max_height = 1920
 
 	new_im = Image.new('RGB', (total_width, max_height))
 
-	new_im.paste(images[0], (0, 550))
-	new_im.paste(images[1], (1920, 550))
-	new_im.paste(images[2], (3840, 0))
+	position_x = 0
+	position_y = 0
+	for i in range(len(images)):
+		if monitors[i].y < 0:
+			position_y = 0 - monitors[i].y
+		else: 
+			position_y = 0 + monitors[i].y
+		new_im.paste(images[i], (position_x, position_y))
+		position_x = widths[i]
+		i += 1
+
 
 	new_im.save('final.jpg', quality=100, subsampling=0)
 	setWallpaper("C:\\wallpaper-python\\wallpapers\\final.jpg")
